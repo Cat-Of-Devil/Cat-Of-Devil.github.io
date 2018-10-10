@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Lorem ipsum..</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
+    <style>
+        [data-template] {
+            display: none;
+        }
+        .product img {
+            max-height: 100px;
+        }
+
+        .header {
+            position: relative;
+        }
+        .header-card {
+            position: absolute;
+            right: 0;
+            top:20px;
+        }
+        a[href="#list"] {
+            display: block;
+            width:100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="container pb-3">
+
+        <div class="header mt-5">
+            <h1 class="text-center">Super Shop</h1>
+            <div class="header-card">
+                <a href="#card">
+                    <i class="fa fa-cart-plus"></i> 
+                    <span class="js-card-counter">0</span>
+                </a>
+            </div>
+            <hr>
+        </div>
+        
+        <div class="text-center js-loader">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" alt="Loading..">
+        </div>
+
+        <div class="mt-5" data-page="list" data-action="actionList">
+            <div class="col-md-3 mb-5 text-center product" data-template="product">
+                <img src="{{image}}" alt="{{name}}" class="pl-5 pr-5 img-fluid">
+                <h2><a href="#view-{{id}}">{{name}}</a></h2>
+                <div>{{description}}</div>
+                <div><b>{{cost}} {{currency}}</b></div>
+                <div>
+                    <button class="btn btn-success" data-id="{{id}}">
+                        <i class="fa fa-cart-plus"></i>
+                        Купить
+                    </button>
+                </div>
+            </div>
+            <div class="row js-view"></div>
+            <hr>
+
+            <div class="text-center">
+                <a target="_blank" href="https://docs.google.com/spreadsheets/d/1RqDjkE9dsq7eb61hYLmKyDZBw94RKeiR9xzHb6IuZ0o/edit#gid=0">Таблица с данными</a>
+            </div>
+        </div>
+
+        <div class="mt-5" data-page="view" data-action="actionView" style="display:none">
+            <div data-template="product-view" class="row">
+                <div class="col-md-4">
+                    <img src="{{image}}" alt="{{name}}" class="pl-5 pr-5 img-fluid">
+                </div>
+                <div class="col-md-8">
+                    <h1>{{name}}</h1>
+                    <div>{{description}}</div>
+                    <div><b>{{cost}} {{currency}}</b></div>
+                    <div>
+                        <button class="btn btn-success" data-id="{{id}}">
+                            <i class="fa fa-cart-plus"></i>
+                            Купить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="js-view"></div>
+            <hr>
+            <a href="#list"><i class="fas fa-arrow-left"></i> К списку товаров</a>
+        </div>
+
+        <div class="mt-5" data-page="card" data-action="actionCard" style="display:none">
+            <div class="js-view"></div>
+
+            <form class="mt-5 mb-5">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email">
+                    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="text" class="form-control" id="phone" placeholder="+380000000000">
+                </div>
+                <button type="submit" class="btn btn-primary">Оформить заказ!</button>
+            </form>
+
+            <a href="#list"><i class="fas fa-arrow-left"></i> К списку товаров</a>
+        </div> 
+
+    </section>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" defer></script>
+    <script>
+    ;(function(){
+
+        var spreadsheet = "https://spreadsheets.google.com/feeds/list/1RqDjkE9dsq7eb61hYLmKyDZBw94RKeiR9xzHb6IuZ0o/od6/public/values?alt=json";
+
+        var pages = document.querySelectorAll('[data-page]'),
+            cardCounter = document.querySelector('.js-card-counter'),
+            templ = document.querySelector('[data-template="product"]'),
+            templView = document.querySelector('[data-template="product-view"]'),
+            loader = document.querySelector('.js-loader');
+            
+        var card = JSON.parse(localStorage.getItem('_card'))||{};
+        // cardCounter.innerHTML = Object.keys(card).length;
+
+        if (Object.keys(card).length)
+            cardCounter.innerHTML = Object.values(card).reduce((a,b) => a+b);
+
+
+        /**
+         * Execute this function if show "list" page 
+         */
+        function actionList(id, block) {
+            fetchJson(function(products){
+                var view = block.querySelector('.js-view');
+                view.innerHTML = '';
+
+                products.forEach(function(product){
+                    if (+product.show) {
+                        view.insertAdjacentHTML('afterbegin', render(templ, product));
+                    }
+                });
+            });
+        }
+
+        /**
+         * Execute this function if show "view" page 
+         */
+        function actionView(id, block) {
+            fetchJson(function(products){
+                block.querySelector('.js-view').innerHTML = render(templView, findById(id, products));
+            });
+        }
+        
+        /**
+         * Execute this function if show "card" page 
+         */
+        function actionCard(id, block) {
+            fetchJson(function(products){
+                var view = block.querySelector('.js-view');
+                view.innerHTML = 'Пока нет товаров в вашей корзине!';
+
+                if (Object.keys(card).length)
+                {
+                    var rows = [], price = 0;
+
+                    Object.keys(card).forEach(function(id){
+                        var product = findById(id, products);
+                        var fullPrice = (card[id] * product.cost);
+
+                        price += fullPrice;
+
+                        if (product) {
+                            rows.push([
+                                '<div>',
+                                    '<a href="#view-'+product.id+'">'+product.name+' (' + card[id] + ' / ' + fullPrice + product.currency + ')</a>',
+                                '</div>',
+                            ].join(''));
+                        }
+                    });
+
+                    rows.push([
+                        '<div class="text-success">',
+                            '<hr><b>' + price + 'грн<b>',
+                        '</div>',
+                    ].join(''));
+
+                    view.innerHTML = rows.join('');
+                }
+            });
+        }
+
+
+        /**
+         * Fetch data from google spreadsheet
+         */
+        var fetchJson = (function(spreadsheet){
+            var items = [];
+
+            function normalize(data) {
+                var _data = [];
+                data.feed.entry.forEach(function (items) {
+                    var item = {};
+                    for(var k in items) {
+                        if (/^gsx\$/.test(k)) { 
+                            item[k.slice(4)] = items[k]['$t']
+                        }
+                    }
+                    _data.push(item)
+                });
+                return _data;
+            }
+
+            return function (callback) {
+                if (items.length)
+                    callback(items);
+                else {
+                    $.getJSON(spreadsheet, function (data) {
+                        items = normalize(data);
+                        callback(items);
+                        loader.style.display = 'none';
+                    });
+                }
+            }
+        }(spreadsheet));
+
+        function render(templ, data) {
+            var _templ = templ.cloneNode(true)
+                _templ.removeAttribute('data-template');
+                _templ = _templ.outerHTML;
+
+            for (var k in data) {
+                var search = new RegExp('{{'+k+'}}', 'g');
+                _templ = _templ.replace(search, data[k]);
+            }
+            return _templ;
+        }
+
+        function routing() {
+            var view, hash = location.hash.slice(1),
+                matched = hash.match(/^(view|list|card)-?(\d*)/),
+                action = matched[1], id = matched[2];
+
+            pages.forEach(function(el){
+                if (el.dataset['page'] != action) {
+                    el.style.display = 'none';
+                } else {
+                    el.style.display = '';
+                    view = el;
+                }
+            });
+
+            eval(view.dataset['action']+'(id, view)');
+        }
+
+        function findById(id, items) {
+            for(var i in items) {
+                if (items[i].id == id) return items[i];
+            }
+            return false;
+        }
+
+        function addToCard(id) {
+            card[id] = card[id] ? card[id]+1 : 1;
+            localStorage.setItem('_card', JSON.stringify(card));
+            // cardCounter.innerHTML = Object.keys(card).length;
+            cardCounter.innerHTML = Object.values(card).reduce((a,b) => a+b);
+        }
+
+        document.onclick = function(e){
+            if (e.target.hasAttribute('data-id')) {
+                addToCard(+e.target.dataset['id']);
+            }
+        }
+
+        window.onhashchange = function(e) {
+            routing();
+        }
+
+        if (location.hash) {
+            routing();
+        } else {
+            location.hash = 'list';
+        }
+            
+    }());
+    </script>
+</body>
+
+</html>
