@@ -327,10 +327,22 @@
         }
 
         function addToCard(id) {
-            card[id] = card[id] ? card[id]+1 : 1;
-            localStorage.setItem('_card', JSON.stringify(card));
-            // cardCounter.innerHTML = Object.keys(card).length;
-            cardCounter.innerHTML = Object.values(card).reduce((a,b) => a+b);
+            fetchJson(function(products){
+                card[id] = card[id] ? card[id]+1 : 1;
+                localStorage.setItem('_card', JSON.stringify(card));
+                // cardCounter.innerHTML = Object.keys(card).length;
+
+                var fullPrice = 0;
+                var amount = Object.values(card).reduce((a,b) => a+b);
+
+                Object.keys(card).forEach(function(id){
+                    var product = findById(id, products);
+                    var price = (card[id] * product.cost);
+                    fullPrice += price;
+                });
+
+                cardCounter.innerHTML = `${amount}# ${fullPrice} грн`;
+            });
         }
 
         function updateForm() {
